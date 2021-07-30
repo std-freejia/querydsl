@@ -1,5 +1,7 @@
 package study.querydsl.entity;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,6 +12,7 @@ import javax.persistence.EntityManager;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @Transactional
@@ -19,7 +22,7 @@ class MemberTest {
     @Autowired
     EntityManager em;
 
-    @Test
+    @BeforeEach // 테스트 시작전 데이터 넣어두기
     public void testEntity(){ // 처음이니까 순수 JPA
 
         Team teamA = new Team("teamA");
@@ -49,4 +52,30 @@ class MemberTest {
 
     }
 
+    @Test
+    public void startJPQL(){
+        // member1을 찾아라
+        String qlString = "select m from Member m" +
+                " where m.username = :username"; // JPQL
+
+        Member findMember = em.createQuery(qlString, Member.class)
+                .setParameter("username", "member1")
+                .getSingleResult();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void startQuerydsl(){
+        JPAQueryFactory queryFactory = new JPAQueryFactory(em);
+        QMember m = new QMember("m");
+
+        Member findMember = queryFactory
+                .select(m)
+                .from(m)
+                .where(m.username.eq("member1")) // 파라미터 바인딩 처리
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
 }
