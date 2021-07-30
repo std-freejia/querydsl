@@ -13,7 +13,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @Transactional
-@Commit
+//@Commit // 여러 테스트 수행할 때 꼬일 수 있으니까 지우기로.
 class MemberTest {
 
     @Autowired
