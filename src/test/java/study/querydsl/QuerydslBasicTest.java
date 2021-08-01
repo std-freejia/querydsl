@@ -13,6 +13,7 @@ import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
 
 @SpringBootTest
@@ -30,7 +31,7 @@ public class QuerydslBasicTest {
                 em.createQuery("select m from Member m where m.username = :username", Member.class)
                 .setParameter("username", "member1")
                 .getSingleResult();
-        Assertions.assertThat(qlString.getUsername()).isEqualTo("member1");
+        assertThat(qlString.getUsername()).isEqualTo("member1");
     }
 
     @Test
@@ -48,7 +49,29 @@ public class QuerydslBasicTest {
         // 파라미터 바인딩을 Prepared statement 에 바인딩.
         // Prepared statement : 자주 쓰는 sql 을 미리 DB가 이해하기 쉽게 해석해 놓은 것.
         // 대량 쿼리 처리 및 SQLinjection 에 대한 약간의 방어 효과 있음
-        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void search(){
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1")
+                        .and(member.age.eq(10)))
+                .fetchOne();
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void searchAndParam(){ // where에 콤마로 여러개 조건 나열 가능
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(
+                        member.username.eq("member1"),
+                        member.age.between(10, 30)
+                )
+                .fetchOne();
+        assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
