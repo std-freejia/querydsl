@@ -1,6 +1,7 @@
 package study.querydsl;
 
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
+import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
@@ -18,10 +20,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
+import static study.querydsl.entity.QTeam.team;
 
 @SpringBootTest
 @Transactional
-public class QuerydslBasicTest {
+public class QuerydslBasicTest { /** [기본 문법 ] */
 
     @Autowired EntityManager em;
     JPAQueryFactory queryFactory;
@@ -169,6 +172,56 @@ public class QuerydslBasicTest {
         assertThat(queryResults.getLimit()).isEqualTo(2); // limit 2개 ( 한 페이지에 2개씩 출력 )
         assertThat(queryResults.getOffset()).isEqualTo(1); // limit 2개 ( 한 페이지에 2개씩 출력 )
         assertThat(queryResults.getResults().size()).isEqualTo(2); // contents 출력
+    }
+
+    /* 집합 groupBy, having */
+    @Test
+    public void aggregation(){
+        List<Tuple> result = queryFactory
+                .select(member.count(),
+                        member.age.sum(),
+                        member.age.avg(),
+                        member.age.max(),
+                        member.age.min()
+                )
+                .from(member)
+                .fetch();
+
+        Tuple tuple = result.get(0);
+        /** JPA 튜플 리턴해준다.  튜플은 여러가지 타입을 모두 담는다. 실무에서는 DTO로 담아오는게 일반적이다. */
+
+        assertThat(tuple.get(member.count())).isEqualTo(4);
+        assertThat(tuple.get(member.age.sum())).isEqualTo(100);
+        assertThat(tuple.get(member.age.avg())).isEqualTo(25);
+        assertThat(tuple.get(member.age.max())).isEqualTo(40);
+        assertThat(tuple.get(member.age.min())).isEqualTo(10);
+
+    }
+
+    /**  GroupBy
+     * 팀의 이름과 각 팀의 평균 연령을 구해라.
+     */
+    @Test
+    public void group() throws Exception{
+        /**  QTeam.team -> static import 해서 쓰는것을 권장.
+         *  Member에 있는 team과 Team을 조인한다.
+         *  그룹화된 결과에 조건을 걸어서 제한하려면 having.
+         * */
+        List<Tuple> result = queryFactory
+                .select(team.name, member.age.avg())
+                .from(member)
+                .join(member.team, team)
+                .groupBy(team.name)
+                .fetch();
+
+        Tuple teamA = result.get(0);
+        Tuple teamB = result.get(1);
+
+        assertThat(teamA.get(team.name)).isEqualTo("teamA");
+        assertThat(teamA.get(member.age.avg())).isEqualTo(15);
+
+        assertThat(teamB.get(team.name)).isEqualTo("teamB");
+        assertThat(teamB.get(member.age.avg())).isEqualTo(35);
     }
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
