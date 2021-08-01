@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,8 @@ import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.entity.QMember.member;
@@ -73,6 +76,41 @@ public class QuerydslBasicTest {
                 .fetchOne();
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
+
+    @Test
+    public void resultFetch(){
+        /*
+        // 리스트 조회
+        List<Member> fetch = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        // 단건
+        Member fetchOne = queryFactory
+                .selectFrom(member)
+                .fetchOne();
+
+        Member fetchFirst = queryFactory
+                .selectFrom(QMember.member)
+                .fetchFirst(); // limit(1).fetchOne() 과 같다.
+        */
+
+        /** fetchResults() : 페이징 정보 포함, total count 쿼리 추가 실행. */
+        QueryResults<Member> results = queryFactory
+                .selectFrom(member)
+                .fetchResults();
+
+        results.getTotal();
+        List<Member> content = results.getResults();
+
+        // count 쿼리 : select count(member1) from Member member1
+        // 성능이 더 중요할 때는 count 쿼리를 따로 실행하는 것이 좋다.
+        long total = queryFactory
+                .selectFrom(member)
+                .fetchCount();
+
+    }
+
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
     public void before(){
