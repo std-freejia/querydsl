@@ -142,6 +142,34 @@ public class QuerydslBasicTest {
             order by member1.age desc, member1.username asc nulls last */
     }
 
+    @Test
+    public void paging1(){ /** 조회 건수 제한 */
+    // offset은 몇 번째 부터 가져올지. 0부터 시작임.
+    // limit : 최대 조회 건 수 (한 페이지에 노출할 글의 개수)
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetch();
+
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void paging2(){ /** 전체 조회 수  */
+        QueryResults<Member> queryResults = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults();
+
+        assertThat(queryResults.getTotal()).isEqualTo(4); // 전체 조회할 데이터 수
+        assertThat(queryResults.getLimit()).isEqualTo(2); // limit 2개 ( 한 페이지에 2개씩 출력 )
+        assertThat(queryResults.getOffset()).isEqualTo(1); // limit 2개 ( 한 페이지에 2개씩 출력 )
+        assertThat(queryResults.getResults().size()).isEqualTo(2); // contents 출력
+    }
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
     public void before(){
