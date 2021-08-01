@@ -48,6 +48,30 @@ public class QuerydslBasicJoinTest { /** [기본 문법 조인 ] */
         where team.name = 'teamA'1 */
     }
 
+    /** 세타조인 : 연관관계가 없어도 조인 가능하다!
+     *  from 절 내에 엔티티 이름 나열.
+     *
+     *  나열된 테이블을 전부 가져와서 조인 한 다음, where 절로 필터링. 단, DB마다 성능최적화 하는 기본방법은 다르다.
+     *  주의 : outer(외부) 조인 불가능.-> 조인 on을 사용하면 외부 조인 가능.  */
+    @Test
+    public void theta_join(){ // 예제 ) 회원의 이름이 팀 이름과 같은 회원을 조회하라.
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        List<Member> result = queryFactory
+                .select(member)
+                .from(member, team)
+                .where(member.username.eq(team.name))
+                .fetch();
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("teamA", "teamB");
+
+        /* select member1
+            from Member member1, Team team
+            where member1.username = team.name */
+    }
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
     public void before(){
