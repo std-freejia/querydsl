@@ -13,6 +13,8 @@ import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
 
+import static study.querydsl.entity.QMember.member;
+
 @SpringBootTest
 @Transactional
 public class QuerydslBasicTest {
@@ -34,12 +36,14 @@ public class QuerydslBasicTest {
     @Test
     public void startQuerydsl(){ // 컴파일타임에 오류가 잡힌다.
 
-        QMember m = new QMember("mem"); // "m" 변수 명에 별칭을 주는건데 별로 안중요.
+        // QMember m = new QMember("mem"); // "m" 변수 명에 별칭을 주는건데 별로 안중요.
+        // QMember m = QMember.member; // 기본 인스턴스 이름 사용
+        /** [권장하는 기본 Q-Type활용]  Member.member -> "add static import" */
 
         Member findMember = queryFactory
-                .select(m)
-                .from(m)
-                .where(m.username.eq("member1"))
+                .select(member)
+                .from(member)
+                .where(member.username.eq("member1"))
                 .fetchOne();
         // 파라미터 바인딩을 Prepared statement 에 바인딩.
         // Prepared statement : 자주 쓰는 sql 을 미리 DB가 이해하기 쉽게 해석해 놓은 것.
