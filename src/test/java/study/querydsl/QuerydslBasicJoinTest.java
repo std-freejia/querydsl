@@ -1,6 +1,7 @@
 package study.querydsl;
 
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -270,6 +271,38 @@ public class QuerydslBasicJoinTest { /** [기본 문법 조인 ] */
         for (Tuple tuple : result) {
             System.out.println("tuple.get(member.username) = " + tuple.get(member.username));
             System.out.println("tuple = " + tuple.get(select(memberSub.age.avg()).from(memberSub)));
+        }
+    }
+
+    /** Case문 : select, where, order by 절에서 사용. */
+    @Test
+    public void basicCase(){ // 단순한 경우 : 10살, 20살, 그 외.
+
+        List<String> result = queryFactory
+                            .select(member.age
+                                    .when(10).then("열살")
+                                    .when(20).then("스무살")
+                                    .otherwise("기타"))
+                            .from(member)
+                            .fetch();
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    public void complexCase(){
+        /** 복잡한 경우 : 0~20일때, 21~30일때, 나머지,.
+         *  그렇지만, DB에서는 최소한의 그룹핑과 필터링을 해오고, 아래 같은 case와 같은 로직은 프로그래밍 하는 것을 권장한다. */
+        List<String> result = queryFactory
+                .select(new CaseBuilder()
+                        .when(member.age.between(0, 20)).then("0~20살")
+                        .when(member.age.between(21, 30)).then("21~30살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+        for (String s : result) {
+            System.out.println("s = " + s);
         }
     }
 
