@@ -11,6 +11,8 @@ import study.querydsl.entity.Member;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 
 import java.util.List;
 
@@ -147,6 +149,44 @@ public class QuerydslBasicJoinTest { /** [기본 문법 조인 ] */
         tuple = [Member(id=8, username=teamB, age=0), Team(id=2, name=teamB)]
         tuple = [Member(id=9, username=teamC, age=0), null]
          */
+    }
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
+
+    /** fetch join */
+    @Test
+    public void fetchJoinNo(){ // 패치 조인 사용 안한 예
+        em.flush();
+        em.clear();
+
+        // Member 의 필드인 Team은 LAZY로 되어 있다.
+        // -> Member 조회할 때 Team은 프록시 객체로만 가져온다. Team의 데이터에 접근하는 시점에 실제로 DB에 쿼리를 실행한다.
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        // isLoaded() 캐시에 로딩된 엔티티인지 여부를 알려준다.
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam()); // "Team 이 로딩됬니?"
+        assertThat(loaded).as("패치 조인 미적용").isFalse();
+    }
+
+    @Test
+    public void fetchJoinUse(){ /**  패치 조인 사용한 예 */
+        em.flush();
+        em.clear(); // 캐시 초기화
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .join(member.team, team).fetchJoin()
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        // isLoaded() 캐시에 로딩된 엔티티인지 여부를 알려준다.
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam()); // "Team 이 로딩됬니?"
+        assertThat(loaded).as("패치 조인 적용").isTrue(); // Team 까지 로딩 됨.
     }
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
