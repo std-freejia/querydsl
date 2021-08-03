@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,6 +72,81 @@ public class QuerydslBasicJoinTest { /** [기본 문법 조인 ] */
         /* select member1
             from Member member1, Team team
             where member1.username = team.name */
+    }
+
+    /**  조인 on절
+     * 1. 조인 대상 필터링
+     * 2. 연관관계 없는 엔티티 외부 조인
+     *
+     * 예) 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
+     * JPQL: select m, t from Member left join m.team t on t.name = 'teamA'
+     */
+
+    @Test
+    public void join_on_filtering(){
+        List<Tuple> leftJoinresult = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(member.team, team).on(team.name.eq("teamA"))
+                .fetch();
+        /**  leftJoin 이니까 member는 일단 다 가지고 오고, team은 'teamA'만 가져와서 조인.
+         select 가 여러가지 타입으로 조회하니까 Tuple 타입으로 패치한다.
+         leftJoin 쓸 때만 on 절을 사용하고, 내부조인 사용 시 where 를 쓰자. */
+
+        for (Tuple tuple : leftJoinresult) {
+            System.out.println("tuple = " + tuple);
+        }
+        /* 외부 조인 leftJoin 결과
+        tuple = [Member(id=3, username=member1, age=10), Team(id=1, name=teamA)]
+        tuple = [Member(id=4, username=member2, age=20), Team(id=1, name=teamA)]
+        tuple = [Member(id=5, username=member3, age=30), null]
+        tuple = [Member(id=6, username=member4, age=40), null]
+         */
+
+        List<Tuple> innerJoinResult = queryFactory
+                .select(member, team)
+                .from(member)
+                .join(member.team, team).on(team.name.eq("teamA"))
+                .fetch();
+        for (Tuple tuple : innerJoinResult) {
+            System.out.println("tuple = " + tuple);
+        }
+        /*  내부 조인 join 결과 : where 절로 필터링 하는 것과 결과가 동일.
+        tuple = [Member(id=3, username=member1, age=10), Team(id=1, name=teamA)]
+        tuple = [Member(id=4, username=member2, age=20), Team(id=1, name=teamA)]
+         */
+    }
+
+    /** 조인 on절 : 연관관계 없는 엔티티 외부 조인
+     * 예) 회원의 이름이 팀 이름과 같은 대상을 외부 조인 하라.
+     * */
+    @Test
+    public void join_on_no_relation(){
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+        em.persist(new Member("teamC"));
+
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(team).on(member.username.eq(team.name))
+                .fetch();
+        /** 특징: from(member).leftJoin(team)
+         * 아이디로 매칭하지 않는다.
+         * on 절의 member.username으로만 조인한다.(member.team 아이디와 team 이렇게 조인하지 않는게 특징) */
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+        /*
+        tuple = [Member(id=3, username=member1, age=10), null]
+        tuple = [Member(id=4, username=member2, age=20), null]
+        tuple = [Member(id=5, username=member3, age=30), null]
+        tuple = [Member(id=6, username=member4, age=40), null]
+        tuple = [Member(id=7, username=teamA, age=0), Team(id=1, name=teamA)]
+        tuple = [Member(id=8, username=teamB, age=0), Team(id=2, name=teamB)]
+        tuple = [Member(id=9, username=teamC, age=0), null]
+         */
     }
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
