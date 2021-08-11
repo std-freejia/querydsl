@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -152,7 +153,22 @@ public class QuerydslProjectionTest { /** [중급 문법] */
 
         for (UserDto userDto : result) {
             System.out.println("userDto = " + userDto);
+        }
+    }
 
+    @Test
+    public void findDtoByQueryProjection(){
+        /** 1) DTO의 생성자에 @QueryProjection 를 붙인다.
+         *  2) ./gredlew compileQuerydsl 후에 QMemberDto 생성 확인
+         *  컴파일러로 타입을 체크할 수 있으므로 가장 안전한 방법이다.
+         * */
+        List<MemberDto> result = queryFactory
+                .select(new QMemberDto(member.username, member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
         }
     }
 
