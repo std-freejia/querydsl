@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
 import study.querydsl.dto.QMemberDto;
@@ -102,6 +103,48 @@ public class QuerydslDynamicQueryTest {
     private BooleanExpression allEq(String usernameCond, Integer ageCond){
         /** 단, 조립할 때, null 처리에 주의하자.*/
         return usernameEq(usernameCond).and(ageEq(ageCond));
+    }
+
+    /** [수정, 삭제 벌크 연산 ] */
+    @Test
+    // @Commit // 테스트 끝나고, 롤백하지 않고 커밋하고 종료.
+    public void bulkUpdate(){
+
+        // member1 = 10 -> 비회원
+        // member2 = 20 -> 비회원
+        queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        em.flush();
+        em.clear();
+        /** 벌크 연산 하면, DB에 쿼리를 직접 실행한다. 영속성 컨텍스트를 변경시키지 않는다.
+         * 따라서 DB와 영속성 컨텍스트를 동기화가 필요하다.
+         * flush(), clear() 하기.
+         * DB에서 가져온 데이터로 영속성 컨텍스트에 데이터를 덮어씌우도록.
+         * 조회 시, DB보다 영속성 컨텍스트가 항상 우선권을 갖는다.
+         * 조회하려는 데이터가 (pk기준으로) 이미 영속성 컨텍스트에 존재하면, DB에 조회 쿼리를 실행하더라도 영속성 컨텍스트에 있는 데이터를 취한다.
+         */
+    }
+
+    /** 데이터 가공 - 더하기 */
+    @Test
+    public void bulkAdd(){
+        queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+    }
+
+    /** 삭제 */
+    @Test
+    public void bulkDelete(){ // 18살 이상은 삭제
+        queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
     }
 
     @BeforeEach // @Test 실행 전 마다 데이터 미리 세팅하기
