@@ -63,7 +63,7 @@ public class MemberJpaRepository { // repository : 엔티티를 조회하기 위
     }
 
     // [기본으로 쓰기를 권장] Where 절 파라미터 방식
-    public List<MemberTeamDto> search(MemberSearchCondition condition){
+    public List<MemberTeamDto> search(MemberSearchCondition condition){ // DTO 로 프로젝션.
         return queryFactory
                 .select(new QMemberTeamDto(
                         member.id.as("memberId"), member.username, member.age,
