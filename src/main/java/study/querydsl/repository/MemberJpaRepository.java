@@ -1,6 +1,8 @@
 package study.querydsl.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -59,6 +61,64 @@ public class MemberJpaRepository { // repository : 엔티티를 조회하기 위
                 .where(builder)
                 .fetch();
     }
+
+    // [기본으로 쓰기를 권장] Where 절 파라미터 방식
+    public List<MemberTeamDto> search(MemberSearchCondition condition){
+        return queryFactory
+                .select(new QMemberTeamDto(
+                        member.id.as("memberId"), member.username, member.age,
+                        team.id.as("teamId"),
+                        team.name.as("teamName")
+                ))
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                        )
+                .fetch();
+    }
+
+    /** 엔티티를 조회한다면? */
+    public List<Member> searchMember(MemberSearchCondition condition){
+        /**
+         * select 프로젝션이 달라져도, where 조건 코드를 그대로 사용할 수 있다!
+         */
+        return queryFactory
+                .selectFrom(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                        )
+                .fetch();
+    }
+
+    // 조건 조합 예시
+    private BooleanExpression ageBetween(int ageLoe, int ageGoe){
+        return ageGoe(ageLoe).and(ageGoe(ageGoe)); // 단, null체크 조심해야 함.
+    }
+
+    /** (querydsl의) BooleanExpression 은 조합이 가능하다! */
+    private BooleanExpression usernameEq(String username) {
+        return hasText(username) ? member.username.eq(username) : null;
+    }
+    private BooleanExpression teamNameEq(String teamName) {
+        return hasText(teamName) ? team.name.eq(teamName) : null;
+    }
+
+    private BooleanExpression ageGoe(Integer ageGoe) {
+        return ageGoe != null ? member.age.goe(ageGoe) : null;
+    }
+
+    private BooleanExpression ageLoe(Integer ageLoe) {
+        return ageLoe != null ? member.age.loe(ageLoe) : null;
+    }
+
 
     public void save(Member member){
         em.persist(member);

@@ -65,10 +65,11 @@ class MemberJpaRepositoryTest {
         condition.setTeamName("teamB");
         /** 만약, 조건이 하나도 없다면?  -> 전부 조회된다. findAll()  */
 
-        // builder 에 조건을 넘긴다.
-        List<MemberTeamDto> result = memberJpaRepository.searchByBuilder(condition);
+        // builder 에 조건을 넘긴다. searchByBuilder
+        // List<MemberTeamDto> result = memberJpaRepository.searchByBuilder(condition);
+        // Where 절 파라미터 방식. search()
+        List<MemberTeamDto> result = memberJpaRepository.search(condition);
 
-        assertThat(result).extracting("username").containsExactly("member3", "member4");
-
+        assertThat(result).extracting("username").containsExactly("member4");
     }
 }
