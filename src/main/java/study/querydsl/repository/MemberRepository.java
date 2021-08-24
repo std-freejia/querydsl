@@ -20,4 +20,9 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
      1) 조인 불가.
      2) 서비스나 컨트롤러 로직(클라이언트 코드)이 Querydsl이라는 구현기술에 의존해야 한다.
      */
+
+    /** Querydsl Web 한계점.
+     1) 조인 불가.
+     2) eq 정도만 지원하고, 컨트롤러가 Querydsl에 의존하게 된다.
+     */
 }
