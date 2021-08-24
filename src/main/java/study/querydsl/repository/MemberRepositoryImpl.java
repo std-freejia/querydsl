@@ -88,8 +88,8 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
     @Override
     public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
 
-        // content만 가져오는 쿼리
-        List<MemberTeamDto> content =         List<MemberTeamDto> content = queryFactory
+          // content만 가져오는 쿼리
+          List<MemberTeamDto> content = queryFactory
                 .select(new QMemberTeamDto(
                         member.id.as("memberId"), member.username, member.age,
                         team.id.as("teamId"),
