@@ -1,7 +1,11 @@
 package study.querydsl.repository;
 
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
@@ -42,6 +46,87 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
                         ageLoe(condition.getAgeLoe())
                 )
                 .fetch();
+    }
+
+    @Override
+    public Page<MemberTeamDto> searchPageSimple(MemberSearchCondition condition, Pageable pageable) {
+        // offset: 몇 번을 스킵하고, 몇 번째부터 시작할 것이다.
+        // limit : 한 페이지에, 최대 몇 개까지 보여줄 것이다.
+        // fetchResult() 를 쓰면, count쿼리 한 번, content 쿼리 한 번, 이렇게 쿼리를 2번 실행한다.
+
+        QueryResults<MemberTeamDto> results = queryFactory
+                .select(new QMemberTeamDto(
+                        member.id.as("memberId"), member.username, member.age,
+                        team.id.as("teamId"),
+                        team.name.as("teamName")
+                ))
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetchResults();
+
+        List<MemberTeamDto> content = results.getResults(); // 실제 데이터를 꺼내서 content 에 저장
+        long total = results.getTotal(); // 총 데이터 개수를 저장
+
+        return new PageImpl<>(content, pageable, total);
+    }
+
+    /** total count 쿼리를 분리했을 때 이득
+     *  조인이 필요없거나 간단한게 조회해도 count 쿼리를 실행할 수 있는 경우가 있다.
+     *  웬만하면 count 쿼리는 분리해두는 것이 좋다.  */
+    @Override
+    public Page<MemberTeamDto> searchPageComplex(MemberSearchCondition condition, Pageable pageable) {
+
+        // content만 가져오는 쿼리
+        List<MemberTeamDto> content = getMemberTeamDtos(condition, pageable);
+
+        // count만 가져오는 쿼리
+        long total = getTotal(condition);
+
+        return new PageImpl<>(content, pageable, total);
+    }
+
+    private List<MemberTeamDto> getMemberTeamDtos(MemberSearchCondition condition, Pageable pageable) {
+        List<MemberTeamDto> content = queryFactory
+                .select(new QMemberTeamDto(
+                        member.id.as("memberId"), member.username, member.age,
+                        team.id.as("teamId"),
+                        team.name.as("teamName")
+                ))
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+        return content;
+    }
+
+    private long getTotal(MemberSearchCondition condition) {
+        long total = queryFactory
+                .select(member)
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                )
+                .fetchCount();
+        return total;
     }
 
     private BooleanExpression usernameEq(String username) {
